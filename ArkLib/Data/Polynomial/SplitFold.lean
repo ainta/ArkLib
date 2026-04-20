@@ -328,4 +328,59 @@ lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : 
   rw [← eval]
   simp
 
+omit [CommSemiring 𝔽] [NoZeroDivisors 𝔽] in
+private lemma splitNth_two_eval {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x =
+    (splitNth f 2 0).eval (x ^ 2) + x * (splitNth f 2 1).eval (x ^ 2) := by
+  conv_lhs => rw [splitNth_def 2 f]
+  rw [eval_finset_sum]
+  rw [Fin.sum_univ_two]
+  simp only [eval_mul, eval_pow, eval_X]
+  rw [splitNth_eval_comp_pow, splitNth_eval_comp_pow]
+  norm_num
+
+omit [CommSemiring 𝔽] [NoZeroDivisors 𝔽] in
+/--
+The even part of the two-way split is half the sum of the evaluations at opposite points.
+-/
+lemma splitNth_two_eval_add {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x + f.eval (-x) = 2 * (splitNth f 2 0).eval (x ^ 2) := by
+  rw [splitNth_two_eval f x, splitNth_two_eval f (-x)]
+  ring_nf
+
+omit [CommSemiring 𝔽] [NoZeroDivisors 𝔽] in
+/--
+The odd part of the two-way split is half the difference of the evaluations at opposite points,
+up to the extra factor `x`.
+-/
+lemma splitNth_two_eval_sub {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x - f.eval (-x) = 2 * x * (splitNth f 2 1).eval (x ^ 2) := by
+  rw [splitNth_two_eval f x, splitNth_two_eval f (-x)]
+  ring_nf
+
+omit [CommSemiring 𝔽] [NoZeroDivisors 𝔽] in
+/--
+Evaluation of the binary fold in terms of the evaluations of the original polynomial at opposite
+points.
+-/
+lemma foldNth_two_eval {𝔽 : Type} [Field 𝔽] (f : 𝔽[X]) (x β : 𝔽) (hx : x ≠ 0)
+    (h2 : (2 : 𝔽) ≠ 0) :
+    (foldNth 2 f β).eval (x ^ 2) =
+    (f.eval x + f.eval (-x) + β * (f.eval x - f.eval (-x)) * x⁻¹) * (2 : 𝔽)⁻¹ := by
+  unfold foldNth
+  rw [eval_finset_sum]
+  rw [Fin.sum_univ_two]
+  simp only [eval_mul, eval_pow, eval_C]
+  norm_num
+  rw [splitNth_two_eval_add, splitNth_two_eval_sub]
+  set a := eval (x ^ 2) (splitNth f 2 0)
+  set b := eval (x ^ 2) (splitNth f 2 1)
+  rw [show β * (2 * x * b) * x⁻¹ = 2 * β * b by
+    rw [show β * (2 * x * b) * x⁻¹ = (2 * β * b) * x * x⁻¹ by ring]
+    exact mul_inv_cancel_right₀ hx (2 * β * b)]
+  rw [show 2 * a + 2 * β * b = 2 * (a + β * b) by ring]
+  rw [show 2 * (a + β * b) * (2 : 𝔽)⁻¹ = a + β * b by
+    rw [mul_comm (2 : 𝔽) (a + β * b)]
+    exact mul_inv_cancel_right₀ h2 (a + β * b)]
+
 end Polynomial
